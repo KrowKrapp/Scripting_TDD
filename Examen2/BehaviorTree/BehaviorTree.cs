@@ -9,14 +9,25 @@ abstract class Node
 class Root : Node
 {
     private Node child;
-    public Root(Node child) { this.child = child; }
-    public override bool Execute() { return child?.Execute() ?? false; }
+    public Root(Node child)
+    {
+        if (child is Root) throw new InvalidOperationException("Root no puede tener otro Root como hijo.");
+        this.child = child;
+    }
+    public override bool Execute() => child?.Execute() ?? false;
 }
 
 abstract class Composite : Node
 {
     protected Node[] children;
-    public Composite(params Node[] children) { this.children = children; }
+    protected Composite(params Node[] children)
+    {
+        foreach (var child in children)
+        {
+            if (child is Root) throw new InvalidOperationException("Composite no puede tener Root como hijo.");
+        }
+        this.children = children;
+    }
 }
 
 class Sequence : Composite
@@ -42,14 +53,25 @@ class Selector : Composite
         return false;
     }
 }
-class Task : Node
+
+abstract class Task : Node
 {
-    private Func<bool> action;
-    public Task(Func<bool> action) { this.action = action; }
-    public override bool Execute() { return action(); }
+    protected Func<bool> action;
+    protected Task(Func<bool> action) { this.action = action; }
 }
 
-// Variables de IA
+class MoveTask : Task
+{
+    public MoveTask(Func<bool> action) : base(action) { }
+    public override bool Execute() => action();
+}
+
+class WaitTask : Task
+{
+    public WaitTask(Func<bool> action) : base(action) { }
+    public override bool Execute() => action();
+}
+
 static int posicionPersonaje = 0;
 static int posicionObjetivo = 10;
 static int distanciaValida = 3;
@@ -69,12 +91,11 @@ static bool Esperar()
     return true;
 }
 
-// árbol
 static void Main()
 {
-    var selectorDistancia = new Selector(EvaluarDistancia, new Task(MoverPersonaje));
+    var selectorDistancia = new Selector(EvaluarDistancia, new MoveTask(MoverPersonaje));
     var selectorSinEvaluacion = new Selector(null, selectorDistancia);
-    var secuencia = new Sequence(selectorSinEvaluacion, new Task(Esperar));
+    var secuencia = new Sequence(selectorSinEvaluacion, new WaitTask(Esperar));
     var arbol = new Root(secuencia);
 
     while (!arbol.Execute()) { }
