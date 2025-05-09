@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PrimeService\PrimeService.csproj" />
+    <ProjectReference Include="..\BehaviorTree\BehaviorTree.csproj" />
   </ItemGroup>
 
 </Project>
